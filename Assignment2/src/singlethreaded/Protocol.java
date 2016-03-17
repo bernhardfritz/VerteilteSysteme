@@ -23,8 +23,8 @@ public class Protocol {
 	 * JSON operation request/response example.
 	 * Client request:
 	 * {
-	 *   operation: 0,
-	 *   operators: [1, 2]
+	 *   "operation": "ADDITION",
+	 *   "operators": [1, 2]
 	 * }
 	 * 
 	 * Server response:
@@ -37,12 +37,12 @@ public class Protocol {
 	 * JSON authentication request/response example.
 	 * Client request:
 	 * {
-	 *   username: "foo"
+	 *   "username": "foo"
 	 * }
 	 * 
 	 * Server response:
 	 * {
-	 *   success: true
+	 *   "success": true
 	 * }
 	 */
 }
