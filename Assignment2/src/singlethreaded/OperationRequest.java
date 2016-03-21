@@ -11,6 +11,14 @@ public class OperationRequest {
 		this.operators = operators;
 	}
 	
+	public Operation getOperation() {
+		return operation;
+	}
+	
+	public int[] getOperators() {
+		return operators;
+	}
+	
 	// Example
 	public static void main(String[] args) {
 		int[] operators = {1,2};

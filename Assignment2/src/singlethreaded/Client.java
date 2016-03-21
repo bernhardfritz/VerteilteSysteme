@@ -3,6 +3,7 @@ package singlethreaded;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import com.google.gson.Gson;
 
@@ -17,27 +18,39 @@ public class Client {
 		int result = 0;
 		Gson gson = new Gson();
 		try {
+			System.out.printf("Connecting to server %s:%d...\n", ip, protocol.port);
 			// Open connection to server
 			Socket socket = new Socket(ip, protocol.port);
-			// Create JSON authentication request using parameter username
-			AuthenticationRequest authReq = new AuthenticationRequest(username);
-			String jsonAuthReq = gson.toJson(authReq);
-			// Use protocol's request method to send request
-			protocol.request(socket, jsonAuthReq);
-			String jsonAuthRes = "";
-			// Unwrap JSON response
-			AuthenticationResponse authRes = gson.fromJson(jsonAuthRes, AuthenticationResponse.class);
-			// If authentication successful
-			if(authRes.isSuccess()) {
-				// Create JSON operation request using parameters operation and operators
-				OperationRequest opReq = new OperationRequest(operation, operators);
-				String jsonOpReq = gson.toJson(opReq);
+			try {
+				System.out.println("Connected!");
+				// Create JSON authentication request using parameter username
+				AuthenticationRequest authReq = new AuthenticationRequest(username);
+				String jsonAuthReq = gson.toJson(authReq);
+				System.out.printf("Trying to authenticate with username: %s\n", username);
 				// Use protocol's request method to send request
-				protocol.request(socket, jsonOpReq);
-				String jsonOpRes = "";
+				String jsonAuthRes = protocol.request(socket, jsonAuthReq);
 				// Unwrap JSON response
-				OperationResponse opRes = gson.fromJson(jsonOpRes, OperationResponse.class);
-				result = opRes.getResult();
+				AuthenticationResponse authRes = gson.fromJson(jsonAuthRes, AuthenticationResponse.class);
+				// If authentication successful
+				if(authRes.isSuccess()) {
+					System.out.println("Successfully authenticated!");
+					// Create JSON operation request using parameters operation and operators
+					OperationRequest opReq = new OperationRequest(operation, operators);
+					String jsonOpReq = gson.toJson(opReq);
+					System.out.printf("Sending operation request %s %s...\n", operation, Arrays.toString(operators));
+					// Use protocol's request method to send request
+					String jsonOpRes = protocol.request(socket, jsonOpReq);
+					// Unwrap JSON response
+					OperationResponse opRes = gson.fromJson(jsonOpRes, OperationResponse.class);
+					result = opRes.getResult();
+					System.out.printf("Received result: %s\n", result);
+				} else {
+					System.out.println("Authentication failed!");
+				}
+			} finally {
+				System.out.println("Closing connection...");
+				// finally close connection
+				socket.close();
 			}
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
@@ -45,13 +58,13 @@ public class Client {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} finally {
-			// finally close connections
 		}
 		return result;
 	}
 	public static void main(String[] args) {
-		Client client = new Client(new Protocol(1000));
-		client.handleRequest("127.0.0.1", "foo", Operation.LUCAS, 42);
+		Client client = new Client(new Protocol(9090));
+		client.handleRequest("127.0.0.1", "foo", Operation.LUCAS, 10);
+		client.handleRequest("127.0.0.1", "foo", Operation.ADDITION, 1, 2);
+		client.handleRequest("127.0.0.1", "asdf", Operation.SUBTRACTION, 2, 1);
 	}
 }

@@ -1,5 +1,9 @@
 package singlethreaded;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 public class Protocol {
@@ -9,15 +13,58 @@ public class Protocol {
 		this.port = port;
 	}
 	
+	// sends request jsonReq and returns response jsonRes to caller
 	public String request(Socket socket, String jsonReq) {
 		String jsonRes = "";
-		// use input / output streams to realize the client side of the communication
+		try {
+			// use input / output streams to realize the client side of the communication
+			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			out.println(jsonReq);
+			jsonRes = in.readLine();
+		} catch(IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return jsonRes;
 	}
 	
-	public void replay(Socket socket) {
-		// conduct the server's end of the communcation protocol
+	// waits for incoming request and returns content to caller
+	public String replay(Socket socket) {
+		String jsonReq = "";
+		try {
+			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			jsonReq = in.readLine();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return jsonReq;
 	}
+	
+	// sends response jsonRes and returns to caller
+	public void respond(Socket socket, String jsonRes) {
+		try {
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			out.println(jsonRes);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * JSON authentication request/response example.
+	 * Client request:
+	 * {
+	 *   "username": "foo"
+	 * }
+	 * 
+	 * Server response:
+	 * {
+	 *   "success": true
+	 * }
+	 */
 	
 	/*
 	 * JSON operation request/response example.
@@ -30,19 +77,6 @@ public class Protocol {
 	 * Server response:
 	 * {
 	 *   result: 3
-	 * }
-	 */
-	
-	/*
-	 * JSON authentication request/response example.
-	 * Client request:
-	 * {
-	 *   "username": "foo"
-	 * }
-	 * 
-	 * Server response:
-	 * {
-	 *   "success": true
 	 * }
 	 */
 }

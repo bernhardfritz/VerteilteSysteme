@@ -9,6 +9,10 @@ public class AuthenticationRequest {
 		this.username = username;
 	}
 	
+	public String getUsername() {
+		return username;
+	}
+	
 	// Example
 	public static void main(String[] args) {
 		AuthenticationRequest req = new AuthenticationRequest("foo");
