@@ -23,7 +23,6 @@ public class Protocol {
 			out.println(jsonReq);
 			jsonRes = in.readLine();
 		} catch(IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return jsonRes;
@@ -36,7 +35,6 @@ public class Protocol {
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			jsonReq = in.readLine();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return jsonReq;
@@ -48,7 +46,6 @@ public class Protocol {
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			out.println(jsonRes);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -76,7 +73,7 @@ public class Protocol {
 	 * 
 	 * Server response:
 	 * {
-	 *   result: 3
+	 *   "result": 3
 	 * }
 	 */
 }

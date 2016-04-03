@@ -61,7 +61,6 @@ public class RequestHandler implements Runnable {
 		try {
 			Thread.sleep(5000);
 		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -114,11 +113,8 @@ public class RequestHandler implements Runnable {
             try {
 				socket.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
         }
-		
 	}
-
 }

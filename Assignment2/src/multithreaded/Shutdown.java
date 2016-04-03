@@ -59,10 +59,8 @@ public class Shutdown {
 		} catch (SocketException e) {
 			System.out.println("Socket was shut down!");
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return result;
@@ -75,6 +73,5 @@ public class Shutdown {
 
 		//send shutdown request
 		admin.handleRequest("127.0.0.1", "admin", Operation.SHUTDOWN);
-
 	}
 }

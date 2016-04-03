@@ -64,10 +64,8 @@ public class Client implements Runnable{
 		} catch (SocketException e) {
 			System.out.println("Socket has been shut down!");
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return result;
@@ -89,7 +87,6 @@ public class Client implements Runnable{
 //			try {
 //				Thread.sleep(500);
 //			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
 //				e.printStackTrace();
 //			}
 			
