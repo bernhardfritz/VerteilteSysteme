@@ -4,18 +4,18 @@ import com.google.gson.Gson;
 
 // JSON request
 // {
-//   "service": "ADDITION"
+//   "locate": "ADDITION"
 // }
 
 public class LocateServiceRequest {
-	private String service;
+	private String locate;
 	
 	public LocateServiceRequest(String service) {
-		this.service = service;
+		locate = service;
 	}
 	
 	public String getService() {
-		return service;
+		return locate;
 	}
 
 	// Example

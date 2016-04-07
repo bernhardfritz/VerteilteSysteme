@@ -68,6 +68,16 @@ public class Protocol {
 		}
 	}
 	
+	public void masterRespond(DatagramSocket socket, String jsonRes, InetAddress recipient) {
+		DatagramPacket packet = new DatagramPacket(jsonRes.getBytes(), jsonRes.getBytes().length, recipient, socket.getPort());
+		try {
+			socket.setBroadcast(false);
+			socket.send(packet);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public void announceService(DatagramSocket socket, String jsonReq) {
 		InetAddress address = null;
 		try {

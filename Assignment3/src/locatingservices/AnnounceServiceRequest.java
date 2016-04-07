@@ -1,41 +1,26 @@
 package locatingservices;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-
 import com.google.gson.Gson;
 
 // JSON request
 // {
-//   "service": "ADDITION"
-//   "address": "127.0.0.1"
+//   "announce": "ADDITION"
 // }
 
 public class AnnounceServiceRequest {
-	private String service;
-	private String address;
+	private String announce;
 	
-	public AnnounceServiceRequest(String service, String address) {
-		this.service = service;
-		this.address = address;
+	public AnnounceServiceRequest(String service) {
+		announce = service;
 	}
 	
 	public String getService() {
-		return service;
-	}
-	
-	public InetAddress getInetAddress() {
-		try {
-			return InetAddress.getByName(address);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return announce;
 	}
 	
 	// Example
 	public static void main(String[] args) {
-		AnnounceServiceRequest req = new AnnounceServiceRequest("ADDITION", "127.0.0.1");
+		AnnounceServiceRequest req = new AnnounceServiceRequest("ADDITION");
 		Gson gson = new Gson();
 		String json = gson.toJson(req);
 		System.out.println(json);

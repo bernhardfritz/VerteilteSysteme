@@ -13,8 +13,8 @@ public class MultiplicationService implements Service<Integer> {
 	
 	// Example
 	public static void main(String[] args) {
-		Service multiplicationService = new MultiplicationService();
+		Service<Integer> multiplicationService = new MultiplicationService();
 		System.out.println(multiplicationService.getName());
-		System.out.println(((Service<Integer>) multiplicationService).execute(2, 3));
+		System.out.println(multiplicationService.execute(2, 3));
 	}
 }

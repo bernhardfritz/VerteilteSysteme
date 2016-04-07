@@ -15,8 +15,8 @@ public class LucasService implements Service<Integer> {
 	
 	// Example
 	public static void main(String[] args) {
-		Service lucasService = new LucasService();
+		Service<Integer> lucasService = new LucasService();
 		System.out.println(lucasService.getName());
-		System.out.println(((Service<Integer>) lucasService).execute(3));
+		System.out.println(lucasService.execute(3));
 	}
 }

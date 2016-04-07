@@ -13,8 +13,8 @@ public class AdditionService implements Service<Integer>{
 	
 	// Example
 	public static void main(String[] args) {
-		Service additionService = new AdditionService();
+		Service<Integer> additionService = new AdditionService();
 		System.out.println(additionService.getName());
-		System.out.println(((Service<Integer>) additionService).execute(1, 2));
+		System.out.println(additionService.execute(1, 2));
 	}
 }

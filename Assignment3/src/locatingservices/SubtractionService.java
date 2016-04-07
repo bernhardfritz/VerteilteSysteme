@@ -13,8 +13,8 @@ public class SubtractionService implements Service<Integer> {
 	
 	// Example
 	public static void main(String[] args) {
-		Service subtractionService = new SubtractionService();
+		Service<Integer> subtractionService = new SubtractionService();
 		System.out.println(subtractionService.getName());
-		System.out.println(((Service<Integer>) subtractionService).execute(2, 1));
+		System.out.println(subtractionService.execute(2, 1));
 	}
 }
