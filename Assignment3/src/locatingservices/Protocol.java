@@ -11,6 +11,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Protocol {
 	public final int PORT = 9090;
@@ -42,20 +44,22 @@ public class Protocol {
 		return jsonReq;
 	}
 	
-	public String masterReplay(DatagramSocket socket) {
+	public List<String> masterReplay(DatagramSocket socket) {
 		byte[] buffer = new byte[512];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-		String received = "";
 		try {
 			socket.receive(packet);
 		}
 		catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		received = new String(packet.getData(), 0, packet.getLength());
+		String received = new String(packet.getData(), 0, packet.getLength());
 		
-		return received;
+		List<String> returnList = new ArrayList<String>();
+		returnList.add(received);
+		returnList.add(packet.getAddress().getHostAddress() + ":" + Integer.toString(packet.getPort()));
+		
+		return returnList;
 	}
 	
 	// sends response jsonRes and returns to caller
@@ -68,8 +72,16 @@ public class Protocol {
 		}
 	}
 	
-	public void masterRespond(DatagramSocket socket, String jsonRes, InetAddress recipient) {
-		DatagramPacket packet = new DatagramPacket(jsonRes.getBytes(), jsonRes.getBytes().length, recipient, socket.getPort());
+	public void masterRespond(DatagramSocket socket, String jsonRes, String recipient, String port) {
+		InetAddress recipientAddress = null;
+		try {
+			recipientAddress = InetAddress.getByName(recipient);
+		} catch (UnknownHostException e1) {
+			e1.printStackTrace();
+		}
+		int recipientPort = Integer.parseInt(port);
+		
+		DatagramPacket packet = new DatagramPacket(jsonRes.getBytes(), jsonRes.getBytes().length, recipientAddress, recipientPort);
 		try {
 			socket.setBroadcast(false);
 			socket.send(packet);
@@ -78,37 +90,34 @@ public class Protocol {
 		}
 	}
 	
-	public void announceService(DatagramSocket socket, String jsonReq) {
+	private void sendBroadcast(DatagramSocket socket, String jsonReq) {
 		InetAddress address = null;
 		try {
 			address = InetAddress.getByName("255.255.255.255");
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		DatagramPacket packet = new DatagramPacket(jsonReq.getBytes(), jsonReq.getBytes().length, address, socket.getPort());
+		DatagramPacket packet = new DatagramPacket(jsonReq.getBytes(), jsonReq.getBytes().length, address, PORT);
 		
 		try {
 			socket.setBroadcast(true);
 			socket.send(packet);
 		} catch (SocketException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public String locateService(DatagramSocket socket, String jsonReq) {
-		announceService(socket, jsonReq);
+	private String sendBroadcastAndReceivePacket(DatagramSocket socket, String jsonReq) {
+		sendBroadcast(socket, jsonReq);
 		
 		byte[] buffer = new byte[512];
 		DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 		
 		try {
-			socket.setSoTimeout(3000);
+			socket.setSoTimeout(2000);
 		} catch (SocketException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
@@ -117,18 +126,15 @@ public class Protocol {
 		while (count > 0) {
 			try {
 				socket.receive(packet);
-				if (packet.getAddress().getHostAddress().equals("255.255.255.255")) {
-					continue;
-				}
 			} catch(SocketTimeoutException e) {
 				count--;
 			}
 			catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
 			received = new String(packet.getData(), 0, packet.getLength());
+			break;
 		}
 		
 		if (count > 0) {
@@ -137,7 +143,15 @@ public class Protocol {
 		return null;
 	}
 	
+	public void announceService(DatagramSocket socket, String jsonReq) {
+		sendBroadcast(socket, jsonReq);
+	}
+	
+	public String locateService(DatagramSocket socket, String jsonReq) {
+		return sendBroadcastAndReceivePacket(socket, jsonReq);
+	}
+	
 	public String requestServiceList(DatagramSocket socket, String jsonReq) {
-		return locateService(socket, jsonReq);
+		return sendBroadcastAndReceivePacket(socket, jsonReq);
 	}
 }
