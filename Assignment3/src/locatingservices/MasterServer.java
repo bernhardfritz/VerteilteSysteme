@@ -22,6 +22,11 @@ public class MasterServer {
 		protocol = new Protocol();
 		map = new HashMap<String, Set<String>>();
 		shutdown = false;
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				shutdown();
+			}
+		});
 	}
 	
 	private <T> T getRandomElementOfSet(Set<T> set) {
@@ -92,12 +97,7 @@ public class MasterServer {
 	
 	public static void main(String[] args) {
 		System.out.println("Starting masterserver...");
-		final MasterServer server = new MasterServer();
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				server.shutdown();
-			}
-		});
+		MasterServer server = new MasterServer();
 		server.listen();
 	}
 }

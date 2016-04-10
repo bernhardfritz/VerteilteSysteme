@@ -25,8 +25,12 @@ public class ServerImpl implements Server, Runnable {
 	public ServerImpl(List<Service> serviceList) {
 		this.protocol = new Protocol();
 		this.serviceList = serviceList;
-
-		shutdown = false;
+		this.shutdown = false;
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			public void run() {
+				ServerImpl.shutdown();
+			}
+		});
 	}
 
 	public void listen() {
@@ -105,11 +109,5 @@ public class ServerImpl implements Server, Runnable {
 		new Thread(s2).start();
 		new Thread(s3).start();
 		new Thread(s4).start();
-		
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			public void run() {
-				ServerImpl.shutdown();
-			}
-		});
 	}
 }
