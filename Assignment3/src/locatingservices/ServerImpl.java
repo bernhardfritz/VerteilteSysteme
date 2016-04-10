@@ -17,12 +17,12 @@ import com.google.gson.Gson;
 public class ServerImpl implements Server, Runnable {
 	private Protocol protocol;
 	private static volatile boolean shutdown;
-	private List<String> serviceList;
+	private List<Service> serviceList;
 
 	private static final int CAPACITY = 500;
 	private static final int N_THREADS = 500;
 
-	public ServerImpl(List<String> serviceList) {
+	public ServerImpl(List<Service> serviceList) {
 		this.protocol = new Protocol();
 		this.serviceList = serviceList;
 
@@ -50,11 +50,11 @@ public class ServerImpl implements Server, Runnable {
 			ExecutorService es = Executors.unconfigurableExecutorService(executor);
 			
 			// accounce available services
-			for (String service : serviceList) {
-				AnnounceServiceRequest annServReq = new AnnounceServiceRequest(service, listener.getLocalPort());
+			for (Service service : serviceList) {
+				AnnounceServiceRequest annServReq = new AnnounceServiceRequest(service.getName(), listener.getLocalPort());
 				String jsonAnnServReq = gson.toJson(annServReq);
 				protocol.announceService(datagramSocket, jsonAnnServReq);
-				System.out.printf("%d: Service(%s) has been announced.\n", Thread.currentThread().getId(), service);
+				System.out.printf("%d: Service(%s) has been announced.\n", Thread.currentThread().getId(), service.getName());
 			}
 
 			System.out.println(Thread.currentThread().getId() + ": Listening to port " + listener.getLocalPort());
@@ -64,7 +64,7 @@ public class ServerImpl implements Server, Runnable {
 				Socket socket = listener.accept();
 
 				// create new request handler
-				RequestHandler rh = new RequestHandler(Thread.currentThread().getId(), this.protocol, socket);
+				RequestHandler rh = new RequestHandler(Thread.currentThread().getId(), protocol, socket, serviceList);
 
 				// submit request handler to executor service
 				es.submit(rh);
@@ -96,10 +96,10 @@ public class ServerImpl implements Server, Runnable {
 	}
 
 	public static void main(String[] args) {
-		ServerImpl s1 = new ServerImpl(Arrays.asList("ADDITION", "MULTIPLICATION"));
-		ServerImpl s2 = new ServerImpl(Arrays.asList("ADDITION", "SUBTRACTION"));
-		ServerImpl s3 = new ServerImpl(Arrays.asList("MULTIPLICATION", "SUBTRACTION", "LUCAS"));
-		ServerImpl s4 = new ServerImpl(Arrays.asList("MULTIPLICATION", "LUCAS"));
+		ServerImpl s1 = new ServerImpl(Arrays.asList(new AdditionService(), new MultiplicationService()));
+		ServerImpl s2 = new ServerImpl(Arrays.asList(new AdditionService(), new SubtractionService()));
+		ServerImpl s3 = new ServerImpl(Arrays.asList(new MultiplicationService(), new SubtractionService(), new LucasService()));
+		ServerImpl s4 = new ServerImpl(Arrays.asList(new MultiplicationService(), new LucasService()));
 		
 		new Thread(s1).start();
 		new Thread(s2).start();
