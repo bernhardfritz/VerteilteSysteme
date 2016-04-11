@@ -16,19 +16,19 @@ import com.google.gson.Gson;
 
 public class ServerImpl implements Server, Runnable {
 	private Protocol protocol;
-	private static volatile boolean shutdown;
-	private List<Service> serviceList;
+	private volatile boolean shutdown;
+	private List<Service<Integer>> serviceList;
 
 	private static final int CAPACITY = 500;
 	private static final int N_THREADS = 500;
 
-	public ServerImpl(List<Service> serviceList) {
-		this.protocol = new Protocol();
+	public ServerImpl(List<Service<Integer>> serviceList) {
 		this.serviceList = serviceList;
-		this.shutdown = false;
+		protocol = new Protocol();
+		shutdown = false;
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			public void run() {
-				ServerImpl.shutdown();
+				shutdown();
 			}
 		});
 	}
@@ -54,7 +54,7 @@ public class ServerImpl implements Server, Runnable {
 			ExecutorService es = Executors.unconfigurableExecutorService(executor);
 			
 			// accounce available services
-			for (Service service : serviceList) {
+			for (Service<Integer> service : serviceList) {
 				AnnounceServiceRequest annServReq = new AnnounceServiceRequest(service.getName(), listener.getLocalPort());
 				String jsonAnnServReq = gson.toJson(annServReq);
 				protocol.announceService(datagramSocket, jsonAnnServReq);
@@ -88,7 +88,7 @@ public class ServerImpl implements Server, Runnable {
 	}
 
 	// shutdown
-	public static void shutdown() {
+	public void shutdown() {
 		shutdown = true;
 		System.out.println(Thread.currentThread().getId() + ": Shutting down...");
 	}

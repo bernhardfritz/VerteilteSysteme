@@ -11,9 +11,9 @@ public class RequestHandler implements Runnable {
 	private long threadID;
 	private Protocol protocol;
 	private Socket socket;
-	private List<Service> availabeServices;
+	private List<Service<Integer>> availabeServices;
 	
-	public RequestHandler(long threadID, Protocol protocol, Socket socket, List<Service> availabeServices){
+	public RequestHandler(long threadID, Protocol protocol, Socket socket, List<Service<Integer>> availabeServices){
 		this.threadID = threadID;
 		this.protocol = protocol;
 		this.socket = socket;
