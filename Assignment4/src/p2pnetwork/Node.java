@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Type;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -19,32 +21,35 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 public class Node extends Thread {
 	private ServerSocket serverSocket;
 	private Set<ShallowNode> nodeTable;
 	private ShallowNode self;
-	private int n; 
+	private int n;
+	private int hopCount;
 	private boolean connected;
 	
-	public Node(int n) {
-		super(Node.getRandomAlphaNumericString(10));
+	public Node(String name, int n) {
+//		super(Node.getRandomAlphaNumericString(10));
+		super(name);
 		this.n = n;
+		this.hopCount = 2*n;
 		connected = false;
 		nodeTable = Collections.newSetFromMap(new ConcurrentHashMap<ShallowNode, Boolean>()); // concurrent set of known nodes
 		try {
 			serverSocket = new ServerSocket(0); // ServerSocket instance bound to some arbitrary port
 			serverSocket.setSoTimeout(3000);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		self = new ShallowNode(getIp(), getPort(), getName());
 	}
 	
-	public Node(int n, ShallowNode otherNode) {
-		this(n);
+	public Node(String name, int n, ShallowNode otherNode) {
+		this(name, n);
 		if(otherNode != null) this.nodeTable.add(otherNode);
 	}
 	
@@ -52,7 +57,6 @@ public class Node extends Thread {
 		try {
 			return InetAddress.getLocalHost().getHostAddress(); // serverSocket is not used here since serverSocket address will always be 0.0.0.0
 		} catch (UnknownHostException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return "";
@@ -83,7 +87,6 @@ public class Node extends Thread {
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			out.println(json);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -93,8 +96,9 @@ public class Node extends Thread {
 		try {
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			json = in.readLine();
+		} catch (SocketException e) {
+			return json;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return json;
@@ -127,6 +131,50 @@ public class Node extends Thread {
 		return null;
 	}
 	
+	public void sendOneToAllMessage(String text) {
+		Message msg = new Message(self, hopCount, text, null);
+		for (ShallowNode shallowNode : nodeTable) {
+			sendMessage(shallowNode, msg);
+		}
+	}
+	
+	private void sendMessage(ShallowNode recipient, Message msg) {
+		if (connected) {
+			Socket socket = null;
+			try {
+				socket = new Socket(recipient.getIp(), recipient.getPort());
+				send(socket, new Gson().toJson(msg));
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			} catch (ConnectException e) {
+				return;
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if(socket != null) socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	private void handleOneToAllMessageReception(Message msg) {
+		System.out.printf("Node %s received a one-to-all message('%s') from %s\n", self, msg.getText(), msg.getSourceNode());
+		msg.decHopCount();
+		if (msg.getHopCount() > 0) {
+			Set<ShallowNode> sentNodes = new HashSet<ShallowNode>();
+			for (ShallowNode shallowNode : nodeTable) {
+				if (!msg.getSourceNode().equals(shallowNode)) {
+					sentNodes.add(shallowNode);
+					sendMessage(shallowNode, msg);
+				}
+			}
+			System.out.printf("Node %s sent the one-to-all message(%s) from %s to nodes %s\n", self, msg.getText(), msg.getSourceNode(), sentNodes);
+		}
+	}
+	
 	@Override
 	public void run() {
 		connect();
@@ -148,25 +196,25 @@ public class Node extends Thread {
 							System.out.printf("Node %s sent its node table consisting of nodes %s to node %s\n", self, nodeTable, randomNode);
 							nodeTable.remove(self);
 							String json = recv(socket);
-							Type setType = new TypeToken<HashSet<ShallowNode>>() {}.getType();
-							Set<ShallowNode> otherNodes = new Gson().fromJson(json, setType);
-							System.out.printf("Node %s received a node table consisting of nodes %s from node %s\n", self, otherNodes, randomNode);
-							nodeTable.addAll(otherNodes);
-							nodeTable.remove(self);
+							if (!json.isEmpty()) {
+								Type setType = new TypeToken<HashSet<ShallowNode>>() {}.getType();
+								Set<ShallowNode> otherNodes = new Gson().fromJson(json, setType);
+								System.out.printf("Node %s received a node table consisting of nodes %s from node %s\n", self, otherNodes, randomNode);
+								nodeTable.addAll(otherNodes);
+								nodeTable.remove(self);
+							}
 							trimNodeTable();
 							System.out.printf("After merging and trimming the new node table of Node %s looks like %s\n", self, nodeTable);
-						} catch (UnknownHostException e) {
+						} catch (UnknownHostException | ConnectException e) {
 							System.out.printf("Node %s failed to send its node table to node %s. Therefore it will be removed from the sender's node table", self, randomNode);
 							nodeTable.remove(randomNode); // remove entry from node table if it cannot be reached
 							continue; 					  // and pick another entry until no further entry is left
 						} catch (IOException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						} finally {
 							try {
 								if(socket != null) socket.close();
 							} catch (IOException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
@@ -174,15 +222,18 @@ public class Node extends Thread {
 					try {
 						sleep(5000);
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 			}
 		}.start();
+		
 		// main thread waits for new connections.
-		// once a connection is established, it receives the node table from the other node,
-		// sends its own (unmerged) table including its own information using the same socket connection.
+		// once a connection is established, it receives a message from an other node.
+		// if it is a one-to-all message with a hopCount > 1, the message is sent to 
+		// all nodes in the node table (except the source node of the message).
+		// if it is the node table from the other node,
+		// it sends its own (unmerged) table including its own information using the same socket connection.
 		// 'merges' the both tables,
 		// and trims the table to contain a total of n entries
 		while(connected) {
@@ -190,38 +241,44 @@ public class Node extends Thread {
 			try {
 				socket = serverSocket.accept();
 				String json = recv(socket);
-				Type setType = new TypeToken<HashSet<ShallowNode>>() {}.getType();
-				Set<ShallowNode> otherNodes = new Gson().fromJson(json, setType);
-				ShallowNode other = getSender(socket.getLocalAddress().getHostAddress(), socket.getLocalPort(), otherNodes); // this shallow node is for sysout reasons only
-				System.out.printf("Node %s received a node table consisting of nodes %s from %s\n", self, otherNodes, other);
-				nodeTable.add(self);
-				send(socket, new Gson().toJson(nodeTable));
-				System.out.printf("Node %s sent its node table consisting of nodes %s to node %s\n", self, nodeTable, other);
-				nodeTable.remove(self);
-				nodeTable.addAll(otherNodes);
-				nodeTable.remove(self);
-				trimNodeTable();
-				System.out.printf("After merging and trimming, the new node table of Node %s looks like %s\n", self, nodeTable);
-				
+				try {
+					Message recMsg = new Gson().fromJson(json, Message.class);
+					if (recMsg.getRecName() == null) {			// it's a normal one-to-all message
+						handleOneToAllMessageReception(recMsg);
+					} else {									// it's a name-resolution message
+						// TODO implement name-resolution message reception
+					}
+				} catch (JsonSyntaxException e) {
+					Type setType = new TypeToken<HashSet<ShallowNode>>() {}.getType();
+					Set<ShallowNode> otherNodes = new Gson().fromJson(json, setType);
+					ShallowNode other = getSender(socket.getLocalAddress().getHostAddress(), socket.getLocalPort(), otherNodes); // this shallow node is for sysout reasons only
+					System.out.printf("Node %s received a node table consisting of nodes %s from %s\n", self, otherNodes, other);
+					nodeTable.add(self);
+					send(socket, new Gson().toJson(nodeTable));
+					System.out.printf("Node %s sent its node table consisting of nodes %s to node %s\n", self, nodeTable, other);
+					nodeTable.remove(self);
+					nodeTable.addAll(otherNodes);
+					nodeTable.remove(self);
+					trimNodeTable();
+					System.out.printf("After merging and trimming, the new node table of Node %s looks like %s\n", self, nodeTable);
+				}				
 			} catch(SocketTimeoutException e) {
 				System.out.printf("Node %s socket timed out waiting for new connections. Trying again...\n", self);
 				continue;
 			} catch (IOException e) { 
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} finally {
 				try {
 					if(socket != null) socket.close();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		}
+		
 		try {
 			serverSocket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -229,32 +286,43 @@ public class Node extends Thread {
 	public static void main(String[] args) {
 		final int n = 3;
 		// creating a network of 3*n nodes
-		Node firstPeer = new Node(n);
+		Node firstPeer = new Node("Node0", n);
 		List<Node> peers = new ArrayList<Node>();
 		peers.add(firstPeer);
 		for(int i = 1; i < 9; i++) {
 			Node prev = peers.get(i-1);
-			peers.add(new Node(n, new ShallowNode(prev.getIp(), prev.getPort(), prev.getName())));
+			peers.add(new Node("Node"+i, n, new ShallowNode(prev.getIp(), prev.getPort(), prev.getName())));
 		}
+		
 		for(Thread t : peers) {
 			t.start();
 		}
+		
+		// wait for 3 node table update cycles before sending a one-to-all message
+		try {
+			Thread.sleep(11000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		// send a one-to-all message from first node
+		firstPeer.sendOneToAllMessage("Hello, this is " + firstPeer.getName() + ".");
+		
 		// every second one node will be disconnected from the p2p network
 		for(Node node : peers) {
 			try {
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			node.disconnect();
 		}
+		
 		// wait for all threads to be finished
 		for(Thread t : peers) {
 			try {
 				t.join();
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
