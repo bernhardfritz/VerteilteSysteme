@@ -32,6 +32,16 @@ public class Node extends Thread {
 	private int hopCount;
 	private boolean connected;
 	
+	private ShallowNode requestedNode;
+	
+	public ShallowNode getRequestedNode() {
+		return requestedNode;
+	}
+
+	public void setRequestedNode(ShallowNode requestedNode) {
+		this.requestedNode = requestedNode;
+	}
+
 	public Node(String name, int n) {
 //		super(Node.getRandomAlphaNumericString(10));
 		super(name);
@@ -136,6 +146,32 @@ public class Node extends Thread {
 		for (ShallowNode shallowNode : nodeTable) {
 			sendMessage(shallowNode, msg);
 		}
+	}
+	
+	public ShallowNode requestNodeByName(String name){
+		
+		//create message for node request
+		Message msg = new Message(self, hopCount, null, name);
+		
+		//send message to all known nodes
+		for (ShallowNode shallowNode : nodeTable) {
+			sendMessage(shallowNode, msg);
+		}
+		
+		//wait max. 10 seconds
+		int count = 0;
+		while(getRequestedNode() == null && count < 10){
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			count++;
+		}
+		
+		//return node
+		return getRequestedNode();
+		
 	}
 	
 	private void sendMessage(ShallowNode recipient, Message msg) {
@@ -246,7 +282,7 @@ public class Node extends Thread {
 					if (recMsg.getRecName() == null) {			// it's a normal one-to-all message
 						handleOneToAllMessageReception(recMsg);
 					} else {									// it's a name-resolution message
-						// TODO implement name-resolution message reception
+						handleNameResolutionMessage(recMsg);
 					}
 				} catch (JsonSyntaxException e) {
 					Type setType = new TypeToken<HashSet<ShallowNode>>() {}.getType();
@@ -283,6 +319,55 @@ public class Node extends Thread {
 		}
 	}
 	
+	private void handleNameResolutionMessage(Message recMsg) {
+
+		System.out.println("Node " + self.getName() + " received name-resolution message from " + recMsg.getSourceNode().getName());
+		
+		//requested node was found
+		if(recMsg.getTargetNode() != null){
+			//check if I am the requester
+			if(recMsg.getSourceNode().equals(self)){
+				//fill requsted node attribute
+				setRequestedNode(recMsg.getTargetNode());
+			}
+			return;
+		}
+		
+		//I'm the requested node
+		if(self.getName().equals(recMsg.getRecName())){
+			
+			System.out.println("Requested Node " + recMsg.getRecName() + " was found itself");
+			
+			returnNode(recMsg, self);
+			return;
+		}
+		
+		//check if requested node is known
+		for (ShallowNode shallowNode : nodeTable) {
+			if(shallowNode.getName().equals(recMsg.getRecName())){
+				
+				System.out.println("Requested Node " + recMsg.getRecName() + " was found by " + self.toString());
+				
+				returnNode(recMsg, shallowNode);
+				return;
+			}
+		}
+		
+		//node is not known by me...ask other nodes
+		handleOneToAllMessageReception(recMsg);
+		
+	}
+
+	private void returnNode(Message msg, ShallowNode node) {
+
+		//fill target node in message
+		msg.setTargetNode(node);
+		
+		//return message to requester
+		sendMessage(msg.getSourceNode(), msg);
+		
+	}
+
 	public static void main(String[] args) {
 		final int n = 3;
 		// creating a network of 3*n nodes
@@ -307,6 +392,24 @@ public class Node extends Thread {
 		
 		// send a one-to-all message from first node
 		firstPeer.sendOneToAllMessage("Hello, this is " + firstPeer.getName() + ".");
+		
+		// wait for 3 node table update cycles before sending a one-to-all message
+		try {
+			Thread.sleep(11000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		
+		//search for a node in the network
+		ShallowNode requestedNode = firstPeer.requestNodeByName("Node4");
+		
+		if(requestedNode == null){
+			System.out.println("The requested node could not be found :-(");
+		}else{
+			System.out.println("Requested Node was found: " + requestedNode.toString());
+		}
+		
 		
 		// every second one node will be disconnected from the p2p network
 		for(Node node : peers) {
