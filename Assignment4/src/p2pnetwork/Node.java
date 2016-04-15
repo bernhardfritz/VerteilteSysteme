@@ -182,9 +182,9 @@ public class Node extends Thread {
 		}.start();
 		// main thread waits for new connections.
 		// once a connection is established, it receives the node table from the other node,
+		// sends its own (unmerged) table including its own information using the same socket connection.
 		// 'merges' the both tables,
-		// trims the table to contain a total of n entries
-		// and sends the whole node table including its own information using the same socket connection.
+		// and trims the table to contain a total of n entries
 		while(connected) {
 			Socket socket = null;
 			try {
@@ -194,14 +194,15 @@ public class Node extends Thread {
 				Set<ShallowNode> otherNodes = new Gson().fromJson(json, setType);
 				ShallowNode other = getSender(socket.getLocalAddress().getHostAddress(), socket.getLocalPort(), otherNodes); // this shallow node is for sysout reasons only
 				System.out.printf("Node %s received a node table consisting of nodes %s from %s\n", self, otherNodes, other);
-				nodeTable.addAll(otherNodes);
-				nodeTable.remove(self);
-				trimNodeTable();
-				System.out.printf("After merging and trimming, the new node table of Node %s looks like %s\n", self, nodeTable);
 				nodeTable.add(self);
 				send(socket, new Gson().toJson(nodeTable));
 				System.out.printf("Node %s sent its node table consisting of nodes %s to node %s\n", self, nodeTable, other);
 				nodeTable.remove(self);
+				nodeTable.addAll(otherNodes);
+				nodeTable.remove(self);
+				trimNodeTable();
+				System.out.printf("After merging and trimming, the new node table of Node %s looks like %s\n", self, nodeTable);
+				
 			} catch(SocketTimeoutException e) {
 				System.out.printf("Node %s socket timed out waiting for new connections. Trying again...\n", self);
 				continue;
