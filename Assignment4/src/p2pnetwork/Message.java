@@ -8,15 +8,15 @@ public class Message {
 	
 	private String text;
 	
-	private String recName;
+	private String targetName;
 	
 	private ShallowNode targetNode;
 	
-	public Message(ShallowNode sourceNode, int hopCount, String text, String recName) {
+	public Message(ShallowNode sourceNode, int hopCount, String text, String targetName) {
 		this.sourceNode = sourceNode;
 		this.hopCount = hopCount;
 		this.text = text;
-		this.recName = recName;
+		this.targetName = targetName;
 	}
 	
 	public void decHopCount() {
@@ -47,12 +47,12 @@ public class Message {
 		this.text = text;
 	}
 
-	public String getRecName() {
-		return recName;
+	public String getTargetName() {
+		return targetName;
 	}
 
-	public void setRecName(String recName) {
-		this.recName = recName;
+	public void setTargetName(String targetName) {
+		this.targetName = targetName;
 	}
 
 	public ShallowNode getTargetNode() {
@@ -62,5 +62,4 @@ public class Message {
 	public void setTargetNode(ShallowNode targetNode) {
 		this.targetNode = targetNode;
 	}
-	
 }

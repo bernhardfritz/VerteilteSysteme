@@ -149,7 +149,6 @@ public class Node extends Thread {
 	}
 	
 	public ShallowNode requestNodeByName(String name){
-		
 		//create message for node request
 		Message msg = new Message(self, hopCount, null, name);
 		
@@ -171,7 +170,6 @@ public class Node extends Thread {
 		
 		//return node
 		return getRequestedNode();
-		
 	}
 	
 	private void sendMessage(ShallowNode recipient, Message msg) {
@@ -196,19 +194,74 @@ public class Node extends Thread {
 		}
 	}
 	
-	private void handleOneToAllMessageReception(Message msg) {
-		System.out.printf("Node %s received a one-to-all message('%s') from %s\n", self, msg.getText(), msg.getSourceNode());
+	private Set<ShallowNode> sendMessageToKnownNodes(Message msg) {
 		msg.decHopCount();
+		// hopCount > 0 --> message must be send to all known nodes
 		if (msg.getHopCount() > 0) {
 			Set<ShallowNode> sentNodes = new HashSet<ShallowNode>();
 			for (ShallowNode shallowNode : nodeTable) {
+				// message will be send to all known nodes except the source node
 				if (!msg.getSourceNode().equals(shallowNode)) {
 					sentNodes.add(shallowNode);
 					sendMessage(shallowNode, msg);
 				}
 			}
+			
+			return sentNodes;
+		}
+		
+		return null;
+	}
+	
+	private void handleOneToAllMessageReception(Message msg) {
+		System.out.printf("Node %s received a one-to-all message('%s') from %s\n", self, msg.getText(), msg.getSourceNode());
+		Set<ShallowNode> sentNodes = sendMessageToKnownNodes(msg);
+		if (sentNodes != null) {
 			System.out.printf("Node %s sent the one-to-all message(%s) from %s to nodes %s\n", self, msg.getText(), msg.getSourceNode(), sentNodes);
 		}
+	}
+	
+	private void handleNameResolutionMessage(Message recMsg) {
+		System.out.println("Node " + self.getName() + " received name-resolution message from " + recMsg.getSourceNode().getName());
+		
+		//requested node was found
+		if(recMsg.getTargetNode() != null){
+			//check if I am the requester
+			if(recMsg.getSourceNode().equals(self)){
+				//fill requsted node attribute
+				setRequestedNode(recMsg.getTargetNode());
+			}
+			return;
+		}
+		
+		//I'm the requested node
+		if(self.getName().equals(recMsg.getTargetName())){
+			System.out.println("Requested Node " + recMsg.getTargetName() + " was found itself");
+			
+			returnNode(recMsg, self);
+			return;
+		}
+		
+		//check if requested node is known
+		for (ShallowNode shallowNode : nodeTable) {
+			if(shallowNode.getName().equals(recMsg.getTargetName())){
+				System.out.println("Requested Node " + recMsg.getTargetName() + " was found by " + self.toString());
+				
+				returnNode(recMsg, shallowNode);
+				return;
+			}
+		}
+		
+		//node is not known by me...ask other nodes
+		sendMessageToKnownNodes(recMsg);
+	}
+
+	private void returnNode(Message msg, ShallowNode node) {
+		//fill target node in message
+		msg.setTargetNode(node);
+		
+		//return message to requester
+		sendMessage(msg.getSourceNode(), msg);
 	}
 	
 	@Override
@@ -268,6 +321,9 @@ public class Node extends Thread {
 		// once a connection is established, it receives a message from an other node.
 		// if it is a one-to-all message with a hopCount > 1, the message is sent to 
 		// all nodes in the node table (except the source node of the message).
+		// it it is a name-resolution message, it is checked if the node is the requested
+		// node or the requested known is saved in the node table and a return message is sent,
+		// otherwise the name-resolution message will be send to all known nodes.
 		// if it is the node table from the other node,
 		// it sends its own (unmerged) table including its own information using the same socket connection.
 		// 'merges' the both tables,
@@ -279,7 +335,7 @@ public class Node extends Thread {
 				String json = recv(socket);
 				try {
 					Message recMsg = new Gson().fromJson(json, Message.class);
-					if (recMsg.getRecName() == null) {			// it's a normal one-to-all message
+					if (recMsg.getTargetName() == null) {			// it's a normal one-to-all message
 						handleOneToAllMessageReception(recMsg);
 					} else {									// it's a name-resolution message
 						handleNameResolutionMessage(recMsg);
@@ -318,55 +374,6 @@ public class Node extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
-	private void handleNameResolutionMessage(Message recMsg) {
-
-		System.out.println("Node " + self.getName() + " received name-resolution message from " + recMsg.getSourceNode().getName());
-		
-		//requested node was found
-		if(recMsg.getTargetNode() != null){
-			//check if I am the requester
-			if(recMsg.getSourceNode().equals(self)){
-				//fill requsted node attribute
-				setRequestedNode(recMsg.getTargetNode());
-			}
-			return;
-		}
-		
-		//I'm the requested node
-		if(self.getName().equals(recMsg.getRecName())){
-			
-			System.out.println("Requested Node " + recMsg.getRecName() + " was found itself");
-			
-			returnNode(recMsg, self);
-			return;
-		}
-		
-		//check if requested node is known
-		for (ShallowNode shallowNode : nodeTable) {
-			if(shallowNode.getName().equals(recMsg.getRecName())){
-				
-				System.out.println("Requested Node " + recMsg.getRecName() + " was found by " + self.toString());
-				
-				returnNode(recMsg, shallowNode);
-				return;
-			}
-		}
-		
-		//node is not known by me...ask other nodes
-		handleOneToAllMessageReception(recMsg);
-		
-	}
-
-	private void returnNode(Message msg, ShallowNode node) {
-
-		//fill target node in message
-		msg.setTargetNode(node);
-		
-		//return message to requester
-		sendMessage(msg.getSourceNode(), msg);
-		
-	}
 
 	public static void main(String[] args) {
 		final int n = 3;
@@ -393,23 +400,21 @@ public class Node extends Thread {
 		// send a one-to-all message from first node
 		firstPeer.sendOneToAllMessage("Hello, this is " + firstPeer.getName() + ".");
 		
-		// wait for 3 node table update cycles before sending a one-to-all message
+		// wait for 2 seconds before sending a name-resolution message
 		try {
-			Thread.sleep(11000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		
-		
 		//search for a node in the network
-		ShallowNode requestedNode = firstPeer.requestNodeByName("Node4");
+		ShallowNode requestedNode = firstPeer.requestNodeByName(peers.get(4).getName());
 		
-		if(requestedNode == null){
+		if (requestedNode == null) {
 			System.out.println("The requested node could not be found :-(");
-		}else{
-			System.out.println("Requested Node was found: " + requestedNode.toString());
+		} else{
+			System.out.println("Requested Node was found: " + requestedNode.toString() + " :-)");
 		}
-		
 		
 		// every second one node will be disconnected from the p2p network
 		for(Node node : peers) {
