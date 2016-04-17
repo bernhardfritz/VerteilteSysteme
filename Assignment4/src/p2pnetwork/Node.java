@@ -30,7 +30,7 @@ public class Node extends Thread {
 	private ShallowNode self;
 	private int n;
 	private int hopCount;
-	private boolean connected;
+	private volatile boolean connected;
 	
 	private ShallowNode requestedNode;
 	
@@ -214,10 +214,10 @@ public class Node extends Thread {
 	}
 	
 	private void handleOneToAllMessageReception(Message msg) {
-		System.out.printf("Node %s received a one-to-all message('%s') from %s\n", self, msg.getText(), msg.getSourceNode());
+		System.out.printf("Node %s received a one-to-all message(\"%s\") from %s\n", self, msg.getText(), msg.getSourceNode());
 		Set<ShallowNode> sentNodes = sendMessageToKnownNodes(msg);
 		if (sentNodes != null) {
-			System.out.printf("Node %s sent the one-to-all message(%s) from %s to nodes %s\n", self, msg.getText(), msg.getSourceNode(), sentNodes);
+			System.out.printf("Node %s sent the one-to-all message(\"%s\") from %s to nodes %s\n", self, msg.getText(), msg.getSourceNode(), sentNodes);
 		}
 	}
 	
@@ -236,7 +236,7 @@ public class Node extends Thread {
 		
 		//I'm the requested node
 		if(self.getName().equals(recMsg.getTargetName())){
-			System.out.println("Requested Node " + recMsg.getTargetName() + " was found itself");
+			System.out.println("Requested Node " + recMsg.getTargetName() + " was found by itself");
 			
 			returnNode(recMsg, self);
 			return;
@@ -295,7 +295,7 @@ public class Node extends Thread {
 							trimNodeTable();
 							System.out.printf("After merging and trimming the new node table of Node %s looks like %s\n", self, nodeTable);
 						} catch (UnknownHostException | ConnectException e) {
-							System.out.printf("Node %s failed to send its node table to node %s. Therefore it will be removed from the sender's node table", self, randomNode);
+							System.out.printf("Node %s failed to send its node table to node %s. Therefore it will be removed from the sender's node table\n", self, randomNode);
 							nodeTable.remove(randomNode); // remove entry from node table if it cannot be reached
 							continue; 					  // and pick another entry until no further entry is left
 						} catch (IOException e) {
