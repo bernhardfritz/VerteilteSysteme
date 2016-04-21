@@ -12,4 +12,6 @@ public interface RemoteServer extends Remote {
 	public Integer multiplication(int a, int b) throws RemoteException;
 	
 	public Integer lucas(int x) throws RemoteException;
+	
+	public <T> T executeTask(Task<T> task) throws RemoteException;
 }

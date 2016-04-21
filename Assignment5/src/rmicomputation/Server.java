@@ -1,5 +1,6 @@
 package rmicomputation;
 
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -28,6 +29,11 @@ public class Server implements RemoteServer {
 		return lucas(x - 1) + lucas(x - 2);
 	}
 	
+	@Override
+	public <T> T executeTask(Task<T> task) throws RemoteException {
+		return task.execute();
+	}
+	
 	public static void main(String args[]) {
 		try {
 		    Server obj = new Server();
@@ -40,4 +46,5 @@ public class Server implements RemoteServer {
 		    e.printStackTrace();
 	    }
 	}
+	
 }

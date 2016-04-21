@@ -46,7 +46,7 @@ public class Server implements RemoteServer {
 	}
 
 	@Override
-	public void deepthought(String question, ICallback callback_) throws RemoteException {
+	public void deepthought(String question, final ICallback callback_) throws RemoteException {
 
 		// create new thread
 		new Thread() {
