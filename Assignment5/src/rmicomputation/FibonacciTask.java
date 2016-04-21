@@ -1,7 +1,9 @@
 package rmicomputation;
 
 public class FibonacciTask implements Task<Integer> {
+	
 	private static final long serialVersionUID = 1849917765012457694L;
+	
 	private int n;
 	
 	public FibonacciTask(int n) {
