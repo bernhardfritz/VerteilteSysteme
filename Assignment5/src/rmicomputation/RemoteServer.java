@@ -15,7 +15,7 @@ public interface RemoteServer extends Remote {
 	
 	public <T> T executeTask(Task<T> task) throws RemoteException;
 	
-	public void deepThought(String question, Callback callback) throws RemoteException;
+	public void deepThought(String question, RemoteClient clientStub) throws RemoteException;
 	
 	public boolean shutDown(String pwd) throws RemoteException;
 }

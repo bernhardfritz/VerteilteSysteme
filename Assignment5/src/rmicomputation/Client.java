@@ -1,25 +1,42 @@
 package rmicomputation;
 
 import java.rmi.ConnectException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-public class Client {
+public class Client implements RemoteClient {
+	private String asyncResult = "";
+	
+	@Override
+	public void callback(String s) throws RemoteException {
+		asyncResult = s;
+	}
+	
+	public boolean asyncResultReceived() {
+		return !asyncResult.isEmpty();
+	}
+	
+	public String getAsyncResult() {
+		String tmp = asyncResult;
+		asyncResult = "";
+		return tmp;
+	}
 	
 	public static void main(String[] args) {
+		Client client = new Client();
 		try {
 			 // get registry and create serverStub from registry lookup
 			Registry registry = LocateRegistry.getRegistry();
 		    RemoteServer serverStub = (RemoteServer) registry.lookup("Server");
 			
 			// create a callbackClient for deepThought execution
-		    Callback callbackClient = new CallbackClient();
-		    UnicastRemoteObject.exportObject(callbackClient, 0);
+		    RemoteClient clientStub = (RemoteClient) UnicastRemoteObject.exportObject(client, 0);
 		    
 		    String question = "What is the meaning of life?";
 		    System.out.printf("Executing DeepThought(\"%s\")\n", question);
-		    serverStub.deepThought(question, callbackClient);
+		    serverStub.deepThought(question, clientStub);
 		    
 		    int a = 6;
 		    int b = 3;
@@ -34,17 +51,17 @@ public class Client {
 		    System.out.printf("Server ShutDown(\"test\"): %s\n", serverStub.shutDown("test"));
 		    
 		    // wait for callback
-		    while(!callbackClient.isShutdown()) {
+		    while(!client.asyncResultReceived()) {
 		    	Thread.sleep(1000);
 		    }
 		    
-		    System.out.println(callbackClient.getAnswer());
+		    System.out.println(client.getAsyncResult());
 		    
 		    
 		    System.out.printf("Server ShutDown(\"now\"): %s\n", serverStub.shutDown("now"));
 		    
 		    // unexport callbackClient to shut down gracefully
-		    UnicastRemoteObject.unexportObject(callbackClient, true);
+		    UnicastRemoteObject.unexportObject(client, true);
 		    
 		} catch (ConnectException e) {
 		    System.err.println("Server has to be started first!");

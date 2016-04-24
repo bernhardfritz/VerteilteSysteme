@@ -46,18 +46,18 @@ public class Server implements RemoteServer {
 	}
 	
 	@Override
-	public void deepThought(String questionParam, final Callback callbackParam) throws RemoteException {
+	public void deepThought(final String questionParam, final RemoteClient clientStub) throws RemoteException {
 		System.out.printf("DeepThought(\"%s\")\n", questionParam);
 		
 		// create new thread for task execution
 		new Thread() {
 			private String question;
-			private Callback callback;
+			private RemoteClient callback;
 			
 			public void run() {
 				// set question and callback
 				question = questionParam;
-				callback = callbackParam;
+				callback = clientStub;
 
 				// sleep...
 				try {
@@ -68,7 +68,7 @@ public class Server implements RemoteServer {
 
 				try {
 					// return answer
-					callback.answer("The answer to your question \"" + question + "\" is probably 42.");
+					callback.callback("The answer to your question \"" + question + "\" is probably 42.");
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
