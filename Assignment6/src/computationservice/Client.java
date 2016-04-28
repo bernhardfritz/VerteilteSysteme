@@ -1,4 +1,4 @@
-package loadbalancing;
+package computationservice;
 
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
@@ -8,28 +8,19 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 public class Client implements RemoteClient {
 	
-	private String name;
-	
 	private Map<UUID, Job<?>> jobs;
 	
-	public Client(String name) {
+	public Client() {
 		this.jobs = new HashMap<UUID, Job<?>>();
-		this.name = name;
 	}
 
 	@Override
 	public <T> void callback(T t, UUID id) throws RemoteException {
 		jobs.get(id).setResult(t);
-	}
-	
-	@Override
-	public String getName() throws RemoteException {
-		return name;
 	}
 	
 	public void putJob(UUID id, Job<?> job) {
@@ -41,16 +32,16 @@ public class Client implements RemoteClient {
 	}
 	
 	public static void main(String[] args) {
-		Client client = new Client((args.length > 0) ? args[0] : "Client"+new Random().nextInt(1000));
+		Client client = new Client();
 		try {
 			Registry registry = LocateRegistry.getRegistry();
-		    RemoteDispatcher dispatcherStub = (RemoteDispatcher) registry.lookup("Dispatcher");
+		    RemoteServer serverStub = (RemoteServer) registry.lookup("Server");
 			
 		    RemoteClient clientStub = (RemoteClient) UnicastRemoteObject.exportObject(client, 0);
 		    
 		    for (int i = 1; i <= 40; i++) {
 		    	UUID id = UUID.randomUUID();
-			    Job<Integer> job = dispatcherStub.submit(id, new FibonacciCallable(i), clientStub);
+			    Job<Integer> job = serverStub.submit(id, new FibonacciCallable(i), clientStub);
 			    if (job != null) {
 			    	client.putJob(id, job);
 			    } else {
@@ -73,7 +64,7 @@ public class Client implements RemoteClient {
 		    UnicastRemoteObject.unexportObject(client, true);
 		    
 		} catch (ConnectException e) {
-		    System.err.println("Dispatcher has to be started first!");
+		    System.err.println("Server has to be started first!");
 		} catch (Exception e) {
 		    e.printStackTrace();
 		}
