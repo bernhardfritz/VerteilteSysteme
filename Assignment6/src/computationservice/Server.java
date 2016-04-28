@@ -28,8 +28,8 @@ public class Server implements RemoteServer {
 	}
 
 	@Override
-	public <T> Job<T> submit(UUID idParam, Callable<T> callable, RemoteClient callbackParam) throws RemoteException {
-		Future<T> resultParam;
+	public <T> Job<T> submit(final UUID idParam, Callable<T> callable, final RemoteClient callbackParam) throws RemoteException {
+		final Future<T> resultParam;
 		
 		try {
 			resultParam = executor.submit(callable);

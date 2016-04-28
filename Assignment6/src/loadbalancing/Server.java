@@ -33,10 +33,10 @@ public class Server implements RemoteServer {
 	}
 
 	@Override
-	public <T> Job<T> submit(UUID idParam, Callable<T> callable, RemoteClient callbackParam) throws RemoteException {
+	public <T> Job<T> submit(final UUID idParam, Callable<T> callable, final RemoteClient callbackParam) throws RemoteException {
 		System.out.println(callbackParam.getName() + " trying to submit task(" + idParam + ").");
 		
-		Future<T> resultParam;
+		final Future<T> resultParam;
 		
 		try {
 			resultParam = executor.submit(callable);
