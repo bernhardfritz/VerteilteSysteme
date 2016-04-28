@@ -1,11 +1,9 @@
-package loadbalancing;
+package computationservice;
 
-import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -17,32 +15,25 @@ import java.util.concurrent.TimeUnit;
 
 public class Server implements RemoteServer {
 	
-	private String name;
-	
 	private static final int CAPACITY = 3;
 	private static final int N_THREADS = 5;
 	
 	private LinkedBlockingQueue<Runnable> queue;
 	private ThreadPoolExecutor executor;
 	
-	public Server(String name) {
+	public Server() {
 		queue = new LinkedBlockingQueue<Runnable>(CAPACITY);
 		executor = new ThreadPoolExecutor(N_THREADS, N_THREADS, 0L, TimeUnit.MILLISECONDS, queue);
 		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
-		this.name = name;
 	}
 
 	@Override
 	public <T> Job<T> submit(UUID idParam, Callable<T> callable, RemoteClient callbackParam) throws RemoteException {
-		System.out.println(callbackParam.getName() + " trying to submit task(" + idParam + ").");
-		
 		Future<T> resultParam;
 		
 		try {
 			resultParam = executor.submit(callable);
-			System.out.println("Job(" + idParam + ") from " + callbackParam.getName() + " successfully submitted.");
 		} catch (RejectedExecutionException e) {
-			System.out.println("Job(" + idParam + ") from " + callbackParam.getName() + " rejected.");
 			return null;
 		}
 		
@@ -76,24 +67,15 @@ public class Server implements RemoteServer {
 		return new JobImpl<T>();
 	}
 	
-	@Override
-	public String getName() {
-		return name;
-	}
-	
 	public static void main(String args[]) {
 		try {
-		    Server server = new Server((args.length > 0) ? args[0] : "Server"+new Random().nextInt(1000));
+		    Server server = new Server();
 		    RemoteServer serverStub = (RemoteServer) UnicastRemoteObject.exportObject(server, 0);
 
-			Registry registry = LocateRegistry.getRegistry();
-		    RemoteDispatcher dispatcherStub = (RemoteDispatcher) registry.lookup("Dispatcher");
-
-		    System.out.println("Registering at " + dispatcherStub.getName() + "...");
-		    dispatcherStub.register(serverStub);
-		    System.out.println(server.getName() + " started! Waiting for incoming requests...\n");
-		} catch (ConnectException e) {
-		    System.err.println("Dispatcher has to be started first!");
+		    Registry registry = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+		    registry.rebind("Server", serverStub);
+		    
+		    System.out.println("Server started! Waiting for incoming requests...");
 		} catch (Exception e) {
 		    e.printStackTrace();
 	    }
