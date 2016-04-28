@@ -33,7 +33,7 @@ public class Dispatcher implements RemoteDispatcher {
 	
 	@Override
 	public <T> Job<T> submit(UUID id, Callable<T> job, RemoteClient callback) throws RemoteException {
-		System.out.println(callback.getName() + " trying to submit task(" + id + ").");
+		System.out.println("\n" + callback.getName() + " trying to submit task(" + id + ").");
 		
 		Job<T> j = null;
 		for (int i = 0; i < 3; i++) {
