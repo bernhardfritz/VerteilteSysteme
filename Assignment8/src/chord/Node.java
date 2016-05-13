@@ -20,24 +20,48 @@ public class Node implements INode {
 		fillFingerTable();
 	}
 	
-	public int getId() {
-		return id;
+	@Override
+	public void join(Node node) {
+		// first node in chord network
+		if (node == null) {
+			for (int i = 1; i <= m; i++) {
+				fingerTable.get(i-1).setSuccessor(this);
+			}
+			predecessor = this;
+		} else {
+			initFingerTable(node);
+			updateOthers();
+		}
 	}
 
-	public Node getSuccessor() {
-		return fingerTable.get(0).getSuccessor();
+	/**
+	 * Send a message to the target node recursively.
+	 */
+	@Override
+	public void sendMSG(String msg, Node target) {
+		sendMSG(msg, target, this, 0);
 	}
-
-	public void setSuccessor(Node successor) {
-		fingerTable.get(0).setSuccessor(successor);
-	}
-
-	public Node getPredecessor() {
-		return predecessor;
-	}
-
-	public void setPredecessor(Node predecessor) {
-		this.predecessor = predecessor;
+	
+	public void sendMSG(String msg, Node target, Node source, int hopCount) {		
+		if(target.getId() != id) {
+			Node node = closestPrecedingFinger(target.getId());
+			int i = 0;
+			for (FingerTableEntry entry : fingerTable) {
+				if (node.equals(entry.getSuccessor())) {
+					i = fingerTable.indexOf(entry);
+				}
+			}
+			
+			if (getSuccessor().equals(target)) {
+				node = getSuccessor();
+				i = 0;
+			}
+			System.out.printf("%s: Send message from %s to %s(i=%d)\n", this, source, node, i+1);
+			node.sendMSG(msg, target, source, ++hopCount);
+		} else {
+			System.out.printf("%s: Received message from %s(hopcount=%d): \"%s\"\n", this, source, hopCount, msg);
+			MainC.addHopCount(hopCount);
+		}
 	}
 	
 	private void fillFingerTable() {
@@ -74,44 +98,32 @@ public class Node implements INode {
 	}
 	
 	public void updateFingerTable(Node s, int i) {
-		if (i == 3) {
-			System.out.println("asdf");
+		int upperBound = correctUpperBound(id, fingerTable.get(i).getSuccessor().getId());
+		if (fingerTable.get(i).getSuccessor().getId() == id) {
+			if (fingerTable.get(i).getStart() <= s.getId()) {
+				upperBound += Math.pow(2, m);
+			}
 		}
-		int asdf = ((fingerTable.get(i).getSuccessor().getId() <= id) ? (fingerTable.get(i).getSuccessor().getId() + (int)Math.pow(2, m)) : fingerTable.get(i).getSuccessor().getId());
-		if (s.getId() > id && s.getId() < asdf) {
-			fingerTable.get(i).setSuccessor(s);
+		if (s.getId() > id && s.getId() < upperBound) {
+			if (fingerTable.get(i).getStart() <= s.getId()) {
+				fingerTable.get(i).setSuccessor(s);
+			}
 			Node p = predecessor;
 			p.updateFingerTable(s, i);
 		}
 	}
 
-	@Override
-	public void join(Node node) {
-		// first node in chord network
-		if (node == null) {
-			for (int i = 1; i <= m; i++) {
-				fingerTable.get(i-1).setSuccessor(this);
-			}
-			predecessor = this;
-		} else {
-			initFingerTable(node);
-			updateOthers();
-		}
-	}
-
-	@Override
-	public void sendMSG(String msg, int target) {
-
-	}
-	
 	public Node findSuccessor(int id) {
+		if (this.getId() == id) {
+			return this;
+		}
 		Node node = findPredecessor(id);
 		return node.getSuccessor();
 	}
 
 	public Node findPredecessor(int id) {
 		Node node = this;
-		while (id <= node.getId() || id > ((node.getSuccessor().getId() < node.getId()) ? node.getSuccessor().getId() + Math.pow(2, m) : node.getSuccessor().getId())) {
+		while (id <= node.getId() || id > correctUpperBound(node.getId(), node.getSuccessor().getId())) {
 			if (node.getId() == node.getSuccessor().getId()) {
 				return node;
 			}
@@ -127,7 +139,7 @@ public class Node implements INode {
 	
 	public Node closestPrecedingFinger(int id) {
 		for (int i = m-1; i >= 0; i--) {
-			int nodeId = (fingerTable.get(i).getSuccessor().getId() < this.getId()) ? (fingerTable.get(i).getSuccessor().getId() + (int)Math.pow(2, m)) : fingerTable.get(i).getSuccessor().getId();
+			int nodeId = correctUpperBound(this.getId(), fingerTable.get(i).getSuccessor().getId());
 			int asdf = ((id < this.getId()) ? (id + (int)Math.pow(2, m)) : id);
 			if (nodeId > this.getId() && nodeId < asdf) {
 				return fingerTable.get(i).getSuccessor();
@@ -137,10 +149,53 @@ public class Node implements INode {
 		return this;
 	}
 	
+	private int correctUpperBound(int lo, int hi) {
+		if (hi < lo) {
+			return hi + (int)Math.pow(2, m);
+		}
+		return hi;
+	}
+	
 	public void printFingerTable() {
 		System.out.println("Node" + id + ":");
 		for (FingerTableEntry finger : fingerTable) {
 			System.out.println(finger);
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "Node" + id;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		Node that = (Node)obj;
+		return this.getId() == that.getId();
+	}
+	
+	@Override
+	public int hashCode() {
+		return new Integer(id).hashCode();
+	}
+	
+	public int getId() {
+		return id;
+	}
+
+	public Node getSuccessor() {
+		return fingerTable.get(0).getSuccessor();
+	}
+
+	public void setSuccessor(Node successor) {
+		fingerTable.get(0).setSuccessor(successor);
+	}
+
+	public Node getPredecessor() {
+		return predecessor;
+	}
+
+	public void setPredecessor(Node predecessor) {
+		this.predecessor = predecessor;
 	}
 }

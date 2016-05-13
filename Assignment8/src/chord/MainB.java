@@ -1,6 +1,6 @@
 package chord;
 
-public class Main {
+public class MainB {
 
 	public static void main(String[] args) {
 		int m = 5;
@@ -26,9 +26,12 @@ public class Main {
 		n27.join(n1);
 		
 		n1.printFingerTable();
-		System.out.println();
+		System.out.println("Predecessor: " + n1.getPredecessor() + "\n");
 		n25.printFingerTable();
-		System.out.println();
+		System.out.println("Predecessor: " + n25.getPredecessor() + "\n");
 		n12.printFingerTable();
+		System.out.println("Predecessor: " + n12.getPredecessor() + "\n");
+		
+		n25.sendMSG("Test", n8);
 	}
 }
