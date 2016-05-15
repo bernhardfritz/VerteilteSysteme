@@ -27,11 +27,23 @@ public class MainB {
 		
 		n1.printFingerTable();
 		System.out.println("Predecessor: " + n1.getPredecessor() + "\n");
-		n25.printFingerTable();
-		System.out.println("Predecessor: " + n25.getPredecessor() + "\n");
+		n3.printFingerTable();
+		System.out.println("Predecessor: " + n3.getPredecessor() + "\n");
+		n7.printFingerTable();
+		System.out.println("Predecessor: " + n7.getPredecessor() + "\n");
+		n8.printFingerTable();
+		System.out.println("Predecessor: " + n8.getPredecessor() + "\n");
 		n12.printFingerTable();
 		System.out.println("Predecessor: " + n12.getPredecessor() + "\n");
+		n15.printFingerTable();
+		System.out.println("Predecessor: " + n15.getPredecessor() + "\n");
+		n19.printFingerTable();
+		System.out.println("Predecessor: " + n19.getPredecessor() + "\n");
+		n25.printFingerTable();
+		System.out.println("Predecessor: " + n25.getPredecessor() + "\n");
+		n27.printFingerTable();
+		System.out.println("Predecessor: " + n27.getPredecessor() + "\n");
 		
-		n25.sendMSG("Test", n8);
+		n25.sendMSG("Hello, this is " + n25 + ".", n8);
 	}
 }
