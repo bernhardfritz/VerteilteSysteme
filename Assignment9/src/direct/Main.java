@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.util.Random;
 
 public class Main {
+	
 	public static BigInteger addition(BigInteger a, BigInteger b) {
 		return a.add(b);
 	}
@@ -16,6 +17,6 @@ public class Main {
 		}
 		long end = System.currentTimeMillis();
 		double duration = (end - start) / 1000.0; // in ms
-		System.out.println("[Direct] Duration: " + duration + " ms.");
+		System.out.println("[Direct] Duration: " + duration + " ms");
 	}
 }

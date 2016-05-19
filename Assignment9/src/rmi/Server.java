@@ -12,15 +12,12 @@ public class Server implements RemoteServer {
 	
 	@Override
 	public BigInteger addition(BigInteger a, BigInteger b) {
-//		System.out.printf("Addition(%d, %d)\n", a, b);
 		return a.add(b);
 	}
 	
 	@Override
 	public boolean shutDown(String pwd) throws RemoteException {
-//		System.out.printf("ShutDown(\"%s\")\n", pwd);
 		if (SHUTDOWN_PWD.equals(pwd)) {
-			// unexport the server object to shut down gracefully
 			UnicastRemoteObject.unexportObject(this, true);
 			return true;
 		}
@@ -36,8 +33,6 @@ public class Server implements RemoteServer {
 		    // start the rmiregistry and bind the serverStub
 		    Registry registry = LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
 		    registry.rebind("Server", serverStub);
-		    
-//		    System.out.println("Server started! Waiting for incoming requests...");
 		} catch (Exception e) {
 		    e.printStackTrace();
 	    }

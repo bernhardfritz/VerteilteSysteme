@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Random;
 
 import com.google.gson.Gson;
@@ -20,23 +19,18 @@ public class Client {
 		BigInteger result = BigInteger.ZERO;
 		Gson gson = new Gson();
 		try {
-			//.printf("Connecting to server %s:%d...\n", ip, protocol.port);
 			// Open connection to server
 			Socket socket = new Socket(ip, protocol.port);
 			try {
-				//.println("Connected!");
 				// Create JSON operation request using parameters operation and operators
 				OperationRequest opReq = new OperationRequest(operation, operators);
 				String jsonOpReq = gson.toJson(opReq);
-				//.printf("Sending operation request %s %s...\n", operation, Arrays.toString(operators));
 				// Use protocol's request method to send request
 				String jsonOpRes = protocol.request(socket, jsonOpReq);
 				// Unwrap JSON response
 				OperationResponse opRes = gson.fromJson(jsonOpRes, OperationResponse.class);
 				result = opRes.getResult();
-				//.printf("Received result: %s\n", result);
 			} finally {
-				//.println("Closing connection...");
 				// finally close connection
 				socket.close();
 			}
@@ -56,7 +50,8 @@ public class Client {
 		}
 		long end = System.currentTimeMillis();
 		double duration = (end - start) / 1000.0; // in ms
-		System.out.println("[Socket] Duration: " + duration + " ms.");
+		System.out.println("[Socket] Duration: " + duration + " ms");
+		
 		client.handleRequest("127.0.0.1",  Operation.SHUTDOWN);
 	}
 }

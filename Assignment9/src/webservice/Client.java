@@ -12,6 +12,7 @@ public class Client {
 	public static void main(String[] args) throws MalformedURLException {
 		URL url = new URL("http://localhost:8080/webservice/server?wsdl");
 		QName qname = new QName("http://webservice/", "ServerService");
+		
 		Service service = Service.create(url, qname);
 		IServer server = service.getPort(IServer.class);
 		
@@ -22,7 +23,8 @@ public class Client {
 		}
 		long end = System.currentTimeMillis();
 		double duration = (end - start) / 1000.0; // in ms
-		System.out.println("[WebService] Duration: " + duration + " ms.");
+		System.out.println("[WebService] Duration: " + duration + " ms");
+		
 		server.shutdown();
 	}
 }

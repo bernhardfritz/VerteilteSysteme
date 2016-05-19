@@ -1,0 +1,63 @@
+<!-- Published by JAX-WS RI (http://jax-ws.java.net). RI's version is JAX-WS 
+	RI 2.2.9-b130926.1035 svn-revision#5f6196f2b90e9460065a4c2f4e30e065b245e51e. -->
+<xs:schema version="1.0" targetNamespace="http://webservice/">
+	<xs:element name="addition" type="tns:addition" />
+	<xs:element name="additionResponse" type="tns:additionResponse" />
+	<xs:element name="lucas" type="tns:lucas" />
+	<xs:element name="lucasResponse" type="tns:lucasResponse" />
+	<xs:element name="multiplication" type="tns:multiplication" />
+	<xs:element name="multiplicationResponse" type="tns:multiplicationResponse" />
+	<xs:element name="shutdown" type="tns:shutdown" />
+	<xs:element name="shutdownResponse" type="tns:shutdownResponse" />
+	<xs:element name="subtraction" type="tns:subtraction" />
+	<xs:element name="subtractionResponse" type="tns:subtractionResponse" />
+	<xs:complexType name="addition">
+		<xs:sequence>
+			<xs:element name="arg0" type="xs:integer" minOccurs="0" />
+			<xs:element name="arg1" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="additionResponse">
+		<xs:sequence>
+			<xs:element name="return" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="shutdown">
+		<xs:sequence />
+	</xs:complexType>
+	<xs:complexType name="shutdownResponse">
+		<xs:sequence />
+	</xs:complexType>
+	<xs:complexType name="subtraction">
+		<xs:sequence>
+			<xs:element name="arg0" type="xs:integer" minOccurs="0" />
+			<xs:element name="arg1" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="subtractionResponse">
+		<xs:sequence>
+			<xs:element name="return" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="multiplication">
+		<xs:sequence>
+			<xs:element name="arg0" type="xs:integer" minOccurs="0" />
+			<xs:element name="arg1" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="multiplicationResponse">
+		<xs:sequence>
+			<xs:element name="return" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="lucas">
+		<xs:sequence>
+			<xs:element name="arg0" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="lucasResponse">
+		<xs:sequence>
+			<xs:element name="return" type="xs:integer" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>
