@@ -10,22 +10,58 @@ import java.util.Base64;
 
 public class MyBase64 {
 
-	public static String mytoString(Serializable o) throws IOException{
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ObjectOutputStream oos = new ObjectOutputStream( baos );
-		oos.writeObject( o );
-		oos.close();
+	public static String serializeableToString(Serializable o) {
+		ByteArrayOutputStream baos = null;
+		ObjectOutputStream oos = null;
+		try {
+			baos = new ByteArrayOutputStream();
+			oos = new ObjectOutputStream( baos );
+			oos.writeObject( o );
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				oos.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		return Base64.getEncoder().encodeToString(baos.toByteArray());
 	}
 	
-	public static Object fromString(String s) throws IOException, ClassNotFoundException {
-		
-		byte[] data = Base64.getDecoder().decode(s);
-		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
-		Object o = ois.readObject();
-		ois.close();
+	public static String byteArrayToString(byte[] data) {
+		return Base64.getEncoder().encodeToString(data);
+	}
+	
+	public static Object objectFromString(String s) {
+		ObjectInputStream ois = null;
+		Object o = null;
+		try {
+			byte[] data = Base64.getDecoder().decode(s);
+			ois = new ObjectInputStream(new ByteArrayInputStream(data));
+			o = ois.readObject();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				ois.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 		return o;
-		
 	} 
 	
+	public static byte[] byteArrayFromString(String s) {
+		return Base64.getDecoder().decode(s);
+	}
+	
+	public static void main(String[] args) {
+		String plainText = "test";
+		String encodedText = MyBase64.byteArrayToString(plainText.getBytes());
+		String decodedText = new String((byte[]) MyBase64.byteArrayFromString(encodedText));
+		System.out.println(plainText);
+		System.out.println(encodedText);
+		System.out.println(decodedText);
+	}
 }

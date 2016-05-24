@@ -5,14 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Peer {
@@ -46,10 +43,10 @@ public class Peer {
 				System.out.println("Responding public key...");
 				PublicKey pubkey = Rsa.readPublicKeyFromFile("public" + this.id + ".key");
 
-				respond(socket, MyBase64.mytoString(pubkey));
+				respond(socket, MyBase64.serializeableToString(pubkey));
 
 			} else {
-				System.out.println("\rEncrypted text: " + message);
+				System.out.println("\rEncrypted text: " + new String(MyBase64.byteArrayFromString(message)));
 
 				System.out.println("Decrypted text: " + decrypt(message));
 
@@ -68,28 +65,13 @@ public class Peer {
 	}
 
 	// encrypt message
-	public String encrypt(String message, PublicKey pubKey) {
-
-		try {
-			return new String(Rsa.rsaEncrypt(message.getBytes("UTF-8"), pubKey));
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+	public String encrypt(String plainText, PublicKey pubKey) {
+		return MyBase64.byteArrayToString(Rsa.rsaEncrypt(plainText.getBytes(), pubKey));
 	}
 
 	// decrypt message
-	public String decrypt(String message) {
-
-		try {
-			return new String(Rsa.rsaDecrypt(message.getBytes(), "private" + this.id + ".key"), "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-
+	public String decrypt(String encryptedText) {
+		return new String(Rsa.rsaDecrypt(MyBase64.byteArrayFromString(encryptedText), Rsa.readPrivateKeyFromFile("private" + this.id + ".key")));
 	}
 
 	public void respond(Socket socket, String message) {
@@ -164,24 +146,17 @@ public class Peer {
 					String message = sc.nextLine();
 
 					System.out.println("Requesting public key ...");
-//					String m = peer.request(socket, pub);
-//
-//					PublicKey pubKey = null;
-//					try {
-//						pubKey = (PublicKey) MyBase64.fromString(m);
-//					} catch (ClassNotFoundException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
+					String m = peer.request(socket, pub);
 
-
-					PublicKey pubKey = Rsa.readPublicKeyFromFile("public" + (peer.id ^ 1) + ".key");
+					PublicKey pubKey = null;
 					
+					pubKey = (PublicKey) MyBase64.objectFromString(m);
+
 					String ctext = peer.encrypt(message, pubKey);
 
-					//socket.close();
+					socket.close();
 
-					//socket = new Socket("127.0.0.1", send_port);
+					socket = new Socket("127.0.0.1", send_port);
 
 					peer.respond(socket, ctext);
 				} catch (UnknownHostException e) {

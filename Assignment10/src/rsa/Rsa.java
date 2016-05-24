@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -26,7 +27,7 @@ public class Rsa {
 		try {
 			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
 
-			kpg.initialize(512);
+			kpg.initialize(2048);
 			KeyPair kp = kpg.genKeyPair();
 
 			KeyFactory fact = KeyFactory.getInstance("RSA");
@@ -55,41 +56,35 @@ public class Rsa {
 	}
 
 	public static byte[] rsaEncrypt(byte[] data, PublicKey pubKey) {
-
 		try {
 			Cipher cipher = Cipher.getInstance("RSA");
 			cipher.init(Cipher.ENCRYPT_MODE, pubKey);
 			byte[] cipherData = cipher.doFinal(data);
 			return cipherData;
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return null;
 
 	}
 
-	public static byte[] rsaDecrypt(byte[] data, String fileName) {
-
+	public static byte[] rsaDecrypt(byte[] data, PrivateKey privKey) {
 		try {
-			PrivateKey privKey = readPrivateKeyFromFile(fileName);
-
 			Cipher cipher = Cipher.getInstance("RSA");
 			cipher.init(Cipher.DECRYPT_MODE, privKey);
 			byte[] cipherData = cipher.doFinal(data);
 			return cipherData;
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return null;
-
 	}
 
-	public static PublicKey readPublicKeyFromFile(String keyFileName) throws IOException {
-		InputStream in = new FileInputStream(keyFileName);
-		ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
+	public static PublicKey readPublicKeyFromFile(String keyFileName) {
+		ObjectInputStream oin = null;
 		try {
+			InputStream in = new FileInputStream(keyFileName);
+			oin = new ObjectInputStream(new BufferedInputStream(in));
 			BigInteger m = (BigInteger) oin.readObject();
 			BigInteger e = (BigInteger) oin.readObject();
 			RSAPublicKeySpec keySpec = new RSAPublicKeySpec(m, e);
@@ -97,16 +92,22 @@ public class Rsa {
 			PublicKey pubKey = fact.generatePublic(keySpec);
 			return pubKey;
 		} catch (Exception e) {
-			throw new RuntimeException("Spurious serialisation error", e);
+			e.printStackTrace();
 		} finally {
-			oin.close();
+			try {
+				oin.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		return null;
 	}
 	
-	public static PrivateKey readPrivateKeyFromFile(String keyFileName) throws IOException {
-		InputStream in = new FileInputStream(keyFileName);
-		ObjectInputStream oin = new ObjectInputStream(new BufferedInputStream(in));
+	public static PrivateKey readPrivateKeyFromFile(String keyFileName) {
+		ObjectInputStream oin = null;
 		try {
+			InputStream in = new FileInputStream(keyFileName);
+			oin = new ObjectInputStream(new BufferedInputStream(in));
 			BigInteger m = (BigInteger) oin.readObject();
 			BigInteger e = (BigInteger) oin.readObject();
 			RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(m, e);
@@ -114,10 +115,23 @@ public class Rsa {
 			PrivateKey privKey = fact.generatePrivate(keySpec);
 			return privKey;
 		} catch (Exception e) {
-			throw new RuntimeException("Spurious serialisation error", e);
+			e.printStackTrace();
 		} finally {
-			oin.close();
+			try {
+				oin.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+		return null;
 	}
-
+	
+	public static void main(String[] args) {
+		String plainText = "asdffa;skldjfa;slkfjda;lkjfa";
+		String encryptedText = MyBase64.byteArrayToString(rsaEncrypt(plainText.getBytes(), (PublicKey) MyBase64.objectFromString(MyBase64.serializeableToString(readPublicKeyFromFile("public0.key")))));
+		String decryptedText = new String(rsaDecrypt(MyBase64.byteArrayFromString(encryptedText), readPrivateKeyFromFile("private0.key")));
+		System.out.println(plainText);
+		System.out.println(encryptedText);
+		System.out.println(decryptedText);
+	}
 }
