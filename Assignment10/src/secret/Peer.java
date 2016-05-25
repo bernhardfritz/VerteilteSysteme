@@ -7,8 +7,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Scanner;
 
 public class Peer {
@@ -24,7 +22,6 @@ public class Peer {
 		ServerSocket listener = null;
 		try {
 			listener = new ServerSocket(port);
-
 			Socket socket = listener.accept();
 
 			String ctext = "";
@@ -36,11 +33,8 @@ public class Peer {
 			}
 
 			System.out.println("\rEncrypted text: " + ctext);
-
 			System.out.println("Decrypted text: " + decrypt(ctext));
-
 			System.out.print("Message: ");
-			
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
@@ -54,23 +48,18 @@ public class Peer {
 
 	// encrypt message
 	public String encrypt(String message) {
-
-		char xor;
 		String ctext = "";
 		for (int i = 0; i < message.length(); i++) {
-			xor = (char) (message.charAt(i) ^ key.charAt(i % key.length()));
+			char xor = (char) (message.charAt(i) ^ key.charAt(i % key.length()));
 			ctext = ctext + xor;
 		}
 
 		return ctext;
-
 	}
 
 	// decrypt message
 	public String decrypt(String message) {
-
 		return encrypt(message);
-
 	}
 
 	public void respond(Socket socket, String message) {
@@ -83,7 +72,10 @@ public class Peer {
 	}
 
 	public static void main(String[] args) {
-
+		if (args.length != 3) {
+			System.err.println("Usage: java Peer <secret_key> <listen_port> <send_port>");
+			System.exit(1);
+		}
 		String key = args[0];
 		int listen_port = Integer.parseInt(args[1]);
 		int send_port = Integer.parseInt(args[2]);
@@ -100,40 +92,29 @@ public class Peer {
 		}.start();
 
 		Scanner sc = new Scanner(System.in);
-
 		while (true) {
-
 			System.out.print("Message: ");
 			if (sc.hasNext()) {
-
 				Socket socket = null;
-
 				try {
 					socket = new Socket("127.0.0.1", send_port);
 
 					String message = sc.nextLine();
-
 					String ctext = peer.encrypt(message);
 
 					peer.respond(socket, ctext);
 				} catch (UnknownHostException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} finally {
 					try {
 						socket.close();
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
-
 			}
 		}
-
 	}
-
 }

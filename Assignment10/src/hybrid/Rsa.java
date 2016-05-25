@@ -1,4 +1,4 @@
-package rsa;
+package hybrid;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
